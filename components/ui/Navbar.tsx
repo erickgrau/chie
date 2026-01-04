@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Home, CreditCard, Upload } from "lucide-react"
+import { Home, CreditCard, Upload, Wallet, List, Settings } from "lucide-react"
 import Image from "next/image"
 
 export function Navbar() {
@@ -24,13 +24,21 @@ export function Navbar() {
                         <Home className="h-4 w-4" />
                         <span className="hidden sm:inline">Dashboard</span>
                     </Link>
-                    <Link href="/subscriptions" className="flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+                    <Link href="/transactions" className="flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
                         <CreditCard className="h-4 w-4" />
-                        <span className="hidden sm:inline">Subscriptions</span>
+                        <span className="hidden sm:inline">Transactions</span>
                     </Link>
-                    <Link href="/import" className="flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
-                        <Upload className="h-4 w-4" />
-                        <span className="hidden sm:inline">Import</span>
+                    <Link href="/accounts" className="flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+                        <Wallet className="h-4 w-4" />
+                        <span className="hidden sm:inline">Accounts</span>
+                    </Link>
+                    <Link href="/categories" className="flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+                        <List className="h-4 w-4" />
+                        <span className="hidden sm:inline">Categories</span>
+                    </Link>
+                    <Link href="/settings" className="flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+                        <Settings className="h-4 w-4" />
+                        <span className="hidden sm:inline">Settings</span>
                     </Link>
                 </div>
             </div>
