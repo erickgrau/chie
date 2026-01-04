@@ -36,6 +36,10 @@ export function Navbar() {
                         <List className="h-4 w-4" />
                         <span className="hidden sm:inline">Categories</span>
                     </Link>
+                    <Link href="/import" className="flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+                        <Upload className="h-4 w-4" />
+                        <span className="hidden sm:inline">Import</span>
+                    </Link>
                     <Link href="/settings" className="flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
                         <Settings className="h-4 w-4" />
                         <span className="hidden sm:inline">Settings</span>
