@@ -1,7 +1,7 @@
 
 'use server'
 
-const pdf = require('pdf-parse')
+import PDFParser from 'pdf2json'
 
 export type PDFLine = string
 
@@ -13,15 +13,37 @@ export async function parsePDFAction(formData: FormData): Promise<{ success: boo
         }
 
         const buffer = Buffer.from(await file.arrayBuffer())
-        const data = await pdf(buffer)
 
-        // Split by newlines and filter empty lines
-        const text: string = data.text
-        const lines: string[] = text.split('\n').map((line: string) => line.trim()).filter((line: string) => line.length > 0)
+        return new Promise((resolve) => {
+            const pdfParser = new PDFParser(null, true) // Enable simple text extraction
 
-        return { success: true, data: lines }
+            pdfParser.on("pdfParser_dataError", (errData: any) => {
+                console.error("PDF Parsing Error:", errData.parserError)
+                resolve({ success: false, error: "Failed to parse PDF data" })
+            })
+
+            pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
+                try {
+                    // pdf2json returns URL-encoded text in generic format
+                    // We need to access the text content cautiously
+                    // The '1' in constructor means text content output?
+                    // Actually getRawTextContent() is simpler
+                    const rawText = pdfParser.getRawTextContent()
+
+                    // The text might be somewhat messy, separate by newlines
+                    const lines = rawText.split(/\r\n|\n|\r/).map(l => l.trim()).filter(l => l.length > 0)
+
+                    resolve({ success: true, data: lines })
+                } catch (e: any) {
+                    resolve({ success: false, error: e.message })
+                }
+            })
+
+            pdfParser.parseBuffer(buffer)
+        })
+
     } catch (error: any) {
-        console.error('PDF Parse Error:', error)
+        console.error('PDF Action Error:', error)
         return { success: false, error: error.message }
     }
 }
