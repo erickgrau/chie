@@ -1,8 +1,7 @@
-
 'use client'
 
 import { useState } from 'react'
-import { CSVUploader } from './CSVUploader'
+import { FileUploader } from './FileUploader'
 import { ColumnMapper } from './ColumnMapper'
 import { ImportedTransaction } from '@/lib/import/parsers'
 import { Button } from '@/components/ui/button'
@@ -19,6 +18,7 @@ export function ImportWizard() {
     const [rawRows, setRawRows] = useState<any[]>([])
     const [transactions, setTransactions] = useState<ImportedTransaction[]>([])
     const [saving, setSaving] = useState(false)
+    const [uploading, setUploading] = useState(false)
     const supabase = createClient()
 
     const handleUpload = (data: any[]) => {
@@ -55,31 +55,19 @@ export function ImportWizard() {
                 amount: t.amount,
                 date: format(t.date, 'yyyy-MM-dd'),
                 description: t.description,
-                category_name: t.category, // We might need to resolve this to category_id later, but for now just storing text or matching name
-                // For MVP, we likely need to fetch categories first TO map them, 
-                // OR we just insert and let user categorize later.
-                // Assuming we insert as "Uncategorized" if not matched, or literal string if we want to auto-create.
-                // Let's stick to basic insert.
+                category_name: t.category,
+                category_id: null, // Resolving to Uncategorized logic omitted for brevity, assuming DB default or null is OK
                 is_personal: false, // Defaulting to shared for imported household data
             }))
 
-            // Note: Our current schema expects 'category_id'. 
-            // We should PROBABLY map these to 'Uncategorized' ID if no category match.
-            // For now, let's fetch 'Uncategorized' ID first.
-            const { data: uncateg } = await supabase
-                .from('categories')
-                .select('id')
-                .eq('name', 'Uncategorized')
-                .single()
-
+            // For MVP, letting DB handle null category or we should fetch default
+            const { data: uncateg } = await supabase.from('categories').select('id').eq('name', 'Uncategorized').single()
             const fallbackId = uncateg?.id
 
-            // We need to resolve categories. For now, let's just use Uncategorized for ALL imports 
-            // unless we build a "Category Matcher" step. MVP = Import as Uncategorized.
             const finalInserts = toInsert.map(t => ({
                 ...t,
                 category_id: fallbackId,
-                category_name: undefined // Remove this property as it's not in DB
+                category_name: undefined
             }))
 
             const { error } = await supabase.from('transactions').insert(finalInserts as any)
@@ -107,8 +95,9 @@ export function ImportWizard() {
             {step === 'upload' && (
                 <div className="space-y-4">
                     <h2 className="text-2xl font-bold">Upload Bank Export</h2>
-                    <p>Select a CSV file from your bank.</p>
-                    <CSVUploader onUpload={handleUpload} />
+                    <p>Select a CSV or PDF file from your bank.</p>
+                    <FileUploader onUpload={handleUpload} onLoading={setUploading} />
+                    {uploading && <p className="text-sm text-muted-foreground animate-pulse">Processing file...</p>}
                 </div>
             )}
 

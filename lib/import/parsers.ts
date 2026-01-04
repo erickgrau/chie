@@ -38,6 +38,50 @@ export function normalizeTransactions(
     mapping: ColumnMapping
 ): ImportedTransaction[] {
     return rawRows.map(row => {
+        // Smart Parsing for Unstructured Data (e.g. PDF Lines)
+        // If the user maps Date, Amount, and Description ALL to the same column (likely "raw_text"),
+        // we try to extract data via Regex.
+        if (mapping.date === mapping.amount && mapping.amount === mapping.description) {
+            const raw = row[mapping.date] || ''
+
+            // 1. Extract Date (MM/DD/YYYY, DD/MM/YYYY, YYYY-MM-DD, etc)
+            // Simple match for common date formats
+            const dateMatch = raw.match(/(\d{1,2}\/\d{1,2}\/\d{2,4})|(\d{4}-\d{1,2}-\d{1,2})|((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2})/)
+            let dateObj = new Date()
+            let cleanLine = raw
+
+            if (dateMatch) {
+                dateObj = new Date(dateMatch[0])
+                if (dateObj.getFullYear() < 2000) dateObj.setFullYear(new Date().getFullYear()) // Fix "Jan 01" missing year
+                // Remove date from line to help description cleanup
+                cleanLine = cleanLine.replace(dateMatch[0], '').trim()
+            }
+
+            // 2. Extract Amount
+            // Look for number at end of line, possibly with currency symbol and negatives
+            const amountMatch = cleanLine.match(/(-?\$?[\d,]+\.\d{2}(\-?))$/)
+            let amount = 0
+            if (amountMatch) {
+                let amountStr = amountMatch[0].replace(/[$,]/g, '')
+                if (amountStr.endsWith('-')) { // "50.00-" format
+                    amountStr = '-' + amountStr.slice(0, -1)
+                }
+                amount = parseFloat(amountStr)
+                // Remove amount from line
+                cleanLine = cleanLine.replace(amountMatch[0], '').trim()
+            }
+
+            // 3. Description is what remains
+            return {
+                date: isValid(dateObj) ? startOfDay(dateObj) : startOfDay(new Date()),
+                amount: isNaN(amount) ? 0 : amount,
+                description: cleanLine || raw,
+                category: null,
+                originalData: row
+            }
+        }
+
+        // Standard CSV Column Parsing
         // 1. Date Parsing
         let dateVal = row[mapping.date]
         let dateObj = new Date(dateVal)
